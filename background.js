@@ -1,8 +1,7 @@
-// background.js
-
-let color = '#3aa757';
-
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.sync.set({ color });
-  console.log('Default background color set to %cgreen', `color: ${color}`);
+// get all chrome tabs + info 
+chrome.tabs.query({ currentWindow: true }, function(tabs) {
+    tabs.forEach(function(tab) {
+        chrome.tabs.group({ tabIds: tab.id });
+        console.log('Tab ID: ', tab.id, tab.groupId);
+    });
 });
