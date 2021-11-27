@@ -2,13 +2,10 @@
     "name": "Tab Manager",
     "description": "Tab management tool",
     "version": "0.1.0",
-    "manifest_version": 2,
+    "manifest_version": 3,
     "background": {
-        "service_worker": "./background.js"
+        "service_worker": "./tabManager.js"
     },
     "options_page": "./options.html",
-    "browser_action": {
-        "default_popup": "popup.html"
-    },
     "permissions": ["tabGroups", "tabs", "storage"]
 }
