@@ -55,20 +55,34 @@ function queryTabs() {
 //     startUpTabGrouper(startingTabList);
 // };
 
+
 chrome.tabs.onUpdated.addListener((tab, changeInfo) => {
     if (changeInfo.url) {
         var tabs = queryTabs();
         tabs.then(t => {
             chrome.tabs.query({ active: true, currentWindow: true }).then(x => {
+                console.log(x)
                 const result = t.filter(t => getURL(x[0]) === t.url)
-                console.log('tabIds', x[0].id, 'groupId', result[0].grpid)
-                chrome.tabs.group({ tabIds: x[0].id, groupId: result[0].grpid })
+                if (result.length > 1 && result[0].grpid < 0) {
+                    const tabs = [];
+                    for (y = 0; y < result.length; y++) {
+                        tabs.push(result[y].tabid)
+                    }
+                    console.log(result[0])
+                    chrome.tabs.group({ tabIds: tabs }, (groupId) => {
+                            chrome.tabGroups.update(groupId, {
+                                title: getURL(x[0])
+                            });
+                        })
+                        // chrome.tabGroups.update(x[0].groupId, { title: 'test' })
+                } else {
+                    console.log('tabIds', x[0].id, 'groupId', result[0].grpid)
+                    chrome.tabs.group({ tabIds: x[0].id, groupId: result[0].grpid })
+                }
             });
         })
         if (tab.pinned) { return; }
     }
 });
 
-// need to add logic not to regroup already grouped tabs
-// need to add trigger logic on new tab creation or new url visit with cooldown
 // eventually add custom grouping lists
