@@ -6,6 +6,7 @@ function getURL(tab) {
     return host
 }
 
+// create tabs list array
 function createTabList(dict, url, tabid, grpid) {
     const arr = {};
     arr.url = url;
@@ -14,6 +15,7 @@ function createTabList(dict, url, tabid, grpid) {
     dict.push(arr);
 };
 
+// get all current tabs open and return array
 function allTabs(tabs) {
     var alltabs = [];
     for (let tab of tabs) {
@@ -22,6 +24,7 @@ function allTabs(tabs) {
     return alltabs;
 };
 
+// query and resolve tab promises
 function queryTabs() {
     let querying = chrome.tabs.query({ currentWindow: true });
     var alltabs = querying.then(allTabs);
@@ -29,60 +32,42 @@ function queryTabs() {
     return tabs;
 }
 
-// const groupBy = (arr, prop) => {
-//     return arr.reduce((groups, item) => {
-//         let val = item[prop];
-//         groups[val] = groups[val] || [];
-//         groups[val].push(item);
-//         return groups
-//     }, {});
-// }
-
-// function startUpTabGrouper(list) {
-//     var tabArr = Array.from(Object.entries(list))
-//     for (i = 0; i < tabArr.length; i++) {
-//         var tabIdObj = lstObj[i][1]
-//         const tabs = [];
-//         for (y = 0; y < tabIdObj.length; y++) {
-//             dic.push(tabIdObj[y].tabid)
-//         }
-//         chrome.tabs.group({ tabIds: tabs })
-//     }
-// };
-
-// function groupAll() {
-//     var startingTabList = groupBy(dict, 'url');
-//     startUpTabGrouper(startingTabList);
-// };
-
-
+// active tab grouper
 chrome.tabs.onUpdated.addListener((tab, changeInfo) => {
     if (changeInfo.url) {
-        var tabs = queryTabs();
+        // query all tabs currently open and assign to var
+        const tabs = queryTabs();
         tabs.then(t => {
+            // get current active tab
             chrome.tabs.query({ active: true, currentWindow: true }).then(x => {
-                console.log(x)
+                // filter current tabs list for match of current tab url
                 const result = t.filter(t => getURL(x[0]) === t.url)
-                if (result.length > 1 && result[0].grpid < 0) {
+                console.log(result)
+                    // if tab result list is greater then 1 group tabs
+                if (result.length === 2 && result[0].grpid === -1) {
                     const tabs = [];
+                    // loop to group tabs in result set
                     for (y = 0; y < result.length; y++) {
                         tabs.push(result[y].tabid)
                     }
-                    console.log(result[0])
+                    // create tabs group and assign grouping name
                     chrome.tabs.group({ tabIds: tabs }, (groupId) => {
-                            chrome.tabGroups.update(groupId, {
-                                title: getURL(x[0])
-                            });
-                        })
-                        // chrome.tabGroups.update(x[0].groupId, { title: 'test' })
+                        chrome.tabGroups.update(groupId, {
+                            title: getURL(x[0])
+                        });
+                    })
+                } else if (result.length === 1) {
+                    // skip if standalone tab    
+                    chrome.tabs.ungroup(x[0].id)
+                } else if (x[0].groupId != result[result.length - 1].grpid) {
+                    // if the tab does not match the most recent group - degroup and regroup with latest
+                    chrome.tabs.ungroup(x[0].id)
+                    chrome.tabs.group({ tabIds: x[0].id, groupId: result[result.length - 1].grpid })
                 } else {
-                    console.log('tabIds', x[0].id, 'groupId', result[0].grpid)
+                    // find tab exisiting group and add
                     chrome.tabs.group({ tabIds: x[0].id, groupId: result[0].grpid })
                 }
             });
         })
-        if (tab.pinned) { return; }
     }
 });
-
-// eventually add custom grouping lists
